@@ -5,7 +5,7 @@ members = ["contracts/rigel-vault", "contracts/price-adapter"]
 [workspace.package]
 edition = "2021"
 license = "Apache-2.0"
-repository = "https://github.com/tamerarda/rigel"
+repository = "https://github.com/tamerrarda/rigel"
 
 [profile.release]
 codegen-units = 1

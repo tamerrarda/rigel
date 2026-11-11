@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useApp } from "./Providers";
 import { usd } from "@/lib/format";
 
-/** The four pages, in the order a depositor meets them. */
+/** App navigation: vault first, then history, then what the connected account holds. */
 const PAGES = [
   ["/app/", "Vault"],
   ["/app/rounds/", "Rounds"],

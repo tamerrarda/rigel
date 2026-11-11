@@ -3,6 +3,7 @@
 //! that enters (attached deposits) and leaves (transfer receipts), and after
 //! every step the contract's own liabilities must equal it exactly.
 
+use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_sdk::json_types::{I64, U128, U64};
 use near_sdk::mock::MockAction;
 use near_sdk::test_utils::{get_created_receipts, VMContextBuilder};
@@ -28,6 +29,12 @@ fn bob() -> AccountId {
 }
 fn carol() -> AccountId {
     "carol.testnet".parse().unwrap()
+}
+fn wnear() -> AccountId {
+    "wrap.testnet".parse().unwrap()
+}
+fn intents() -> AccountId {
+    "intents.testnet".parse().unwrap()
 }
 fn keeper() -> AccountId {
     "keeper.testnet".parse().unwrap()
@@ -79,6 +86,7 @@ impl H {
                     "pyth-oracle.testnet".parse().unwrap(),
                     PRICE_ID.into(),
                     params(),
+                    Some(wnear()),
                 )
             },
             now: T0,
@@ -598,4 +606,138 @@ fn many_rounds_keep_the_books() {
         }
     }
     assert_eq!(h.c.state.bidder_claimable_total, 0);
+}
+
+// ---- wNEAR bids (the NEAR Intents delivery path) ----
+
+fn bid_msg(notional: u128, max_bps: u32, beneficiary: Option<&AccountId>) -> String {
+    let b = beneficiary
+        .map(|a| format!(r#","beneficiary":"{a}""#))
+        .unwrap_or_default();
+    format!(r#"{{"bid":{{"notional":"{notional}","max_premium_bps":{max_bps}{b}}}}}"#)
+}
+
+fn inbound(h: &mut H, token: &AccountId, amount: u128, msg: &str) -> u128 {
+    ctx(token, 0, h.now);
+    match h.c.ft_on_transfer(intents(), U128(amount), msg.to_string()) {
+        PromiseOrValue::Value(v) => v.0,
+        PromiseOrValue::Promise(_) => panic!("ft_on_transfer must answer with a value"),
+    }
+}
+
+#[test]
+fn wnear_from_another_token_is_returned() {
+    let mut h = H::new();
+    h.deposit(&alice(), 100 * NEAR);
+    h.open(SPOT);
+    let usdc: AccountId = "usdc.testnet".parse().unwrap();
+    assert_eq!(
+        inbound(&mut h, &usdc, NEAR, &bid_msg(10 * NEAR, 280, None)),
+        NEAR
+    );
+}
+
+#[test]
+fn a_message_that_is_not_a_bid_is_returned() {
+    let mut h = H::new();
+    h.deposit(&alice(), 100 * NEAR);
+    h.open(SPOT);
+    assert_eq!(inbound(&mut h, &wnear(), NEAR, "hello"), NEAR);
+    assert_eq!(
+        inbound(&mut h, &wnear(), NEAR, r#"{"bid":{"notional":"1"}}"#),
+        NEAR
+    );
+}
+
+#[test]
+fn a_bid_outside_the_auction_is_returned() {
+    let mut h = H::new();
+    h.deposit(&alice(), 100 * NEAR);
+    assert_eq!(
+        inbound(&mut h, &wnear(), NEAR, &bid_msg(10 * NEAR, 280, None)),
+        NEAR
+    );
+}
+
+#[test]
+fn an_underfunded_bid_is_returned() {
+    let mut h = H::new();
+    h.deposit(&alice(), 100 * NEAR);
+    h.open(SPOT);
+    // 10 NEAR at 2.80 % needs 0.28 NEAR plus the 0.01 storage reserve.
+    assert_eq!(
+        inbound(&mut h, &wnear(), NEAR / 4, &bid_msg(10 * NEAR, 280, None)),
+        NEAR / 4
+    );
+}
+
+#[test]
+fn a_wnear_bid_fills_for_the_beneficiary() {
+    let mut h = H::new();
+    h.deposit(&alice(), 100 * NEAR);
+    h.open(SPOT);
+    let amount = 10 * NEAR * 280 / 10_000 + BID_STORAGE_RESERVE;
+    let msg = bid_msg(10 * NEAR, 280, Some(&carol()));
+    assert_eq!(
+        inbound(&mut h, &wnear(), amount, &msg),
+        0,
+        "the vault keeps the wNEAR"
+    );
+
+    // near_withdraw succeeded: the wNEAR is now native NEAR held by the vault.
+    ctx(&vault(), 0, h.now);
+    assert!(h
+        .c
+        .on_unwrapped(1, carol(), U128(10 * NEAR), 280, U128(amount), Ok(())));
+    h.held += amount as i128;
+
+    ctx(&vault(), 0, h.now);
+    let filled = h.c.on_bid_price(
+        1,
+        carol(),
+        U128(10 * NEAR),
+        280,
+        U128(amount),
+        price(SPOT, h.now),
+    );
+    assert_eq!(filled.0, 10 * NEAR);
+    let refunds: Vec<_> = get_created_receipts()
+        .into_iter()
+        .filter(|r| r.receiver_id == carol())
+        .collect();
+    assert_eq!(refunds.len(), 1, "the beneficiary gets the unused part");
+    h.settle_books();
+    h.keep_storage();
+    assert_eq!(h.c.get_bidder_position(1, carol()).notional.0, 10 * NEAR);
+    assert_eq!(h.c.get_bidder_position(1, intents()).notional.0, 0);
+}
+
+#[test]
+fn a_failed_unwrap_changes_nothing() {
+    let mut h = H::new();
+    h.deposit(&alice(), 100 * NEAR);
+    h.open(SPOT);
+    ctx(&vault(), 0, h.now);
+    let before = h.c.state.clone();
+    assert!(!h.c.on_unwrapped(
+        1,
+        carol(),
+        U128(10 * NEAR),
+        280,
+        U128(NEAR),
+        Err(PromiseError::Failed)
+    ));
+    assert_eq!(h.c.state, before);
+}
+
+#[test]
+fn wnear_path_is_off_without_a_token() {
+    ctx(&vault(), 0, T0);
+    let c = RigelVault::new(
+        "pyth-oracle.testnet".parse().unwrap(),
+        PRICE_ID.into(),
+        params(),
+        None,
+    );
+    assert_eq!(c.get_config().wnear, None);
 }

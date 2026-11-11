@@ -153,7 +153,7 @@ function DepositCard() {
           Deposit
         </button>
         <p className="sub">
-          Shares, pending deposits and withdrawals are on <Link href="/positions/">My positions</Link>.
+          Shares, pending deposits and withdrawals are on <Link href="/app/positions/">My positions</Link>.
         </p>
         <ConnectHint />
         <Note note={note} />
@@ -218,7 +218,7 @@ function BidCard() {
           Bid
         </button>
         <p className="sub">
-          Your fills and payouts are on <Link href="/claims/">Claims</Link>.
+          Your fills and payouts are on <Link href="/app/claims/">Claims</Link>.
         </p>
         <ConnectHint />
         <Note note={note} />

@@ -7,10 +7,10 @@ import { usd } from "@/lib/format";
 
 /** The four pages, in the order a depositor meets them. */
 const PAGES = [
-  ["/", "Vault"],
-  ["/rounds/", "Rounds"],
-  ["/claims/", "Claims"],
-  ["/positions/", "My positions"],
+  ["/app/", "Vault"],
+  ["/app/rounds/", "Rounds"],
+  ["/app/claims/", "Claims"],
+  ["/app/positions/", "My positions"],
 ] as const;
 
 export function SiteHeader() {

@@ -219,5 +219,6 @@ pub struct BidderPositionView {
 pub struct ConfigView {
     pub oracle: near_sdk::AccountId,
     pub price_id: String,
+    pub wnear: Option<near_sdk::AccountId>,
     pub params: EpochParams,
 }

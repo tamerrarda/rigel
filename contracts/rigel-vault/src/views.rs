@@ -124,6 +124,7 @@ impl RigelVault {
         ConfigView {
             oracle: self.oracle.clone(),
             price_id: self.price_id.clone(),
+            wnear: self.wnear.clone(),
             params: self.params.clone(),
         }
     }

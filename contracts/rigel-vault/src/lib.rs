@@ -19,6 +19,7 @@ use near_sdk::{
 
 pub mod claims;
 pub mod epoch;
+pub mod intents;
 pub mod math;
 pub mod token;
 pub mod types;
@@ -50,6 +51,9 @@ pub struct RigelVault {
     oracle: AccountId,
     /// Pyth price feed id, hex.
     price_id: String,
+    /// The wNEAR token accepted by `ft_on_transfer` (`wrap.near`, `wrap.testnet`);
+    /// `None` turns the wNEAR bid path off.
+    wnear: Option<AccountId>,
     /// Parameters for the next round. There is no setter: a change is a new vault.
     params: EpochParams,
     state: State,
@@ -65,7 +69,12 @@ pub struct RigelVault {
 impl RigelVault {
     /// Deploys a vault. Everything network specific is an argument here.
     #[init]
-    pub fn new(oracle: AccountId, price_id: String, params: EpochParams) -> Self {
+    pub fn new(
+        oracle: AccountId,
+        price_id: String,
+        params: EpochParams,
+        wnear: Option<AccountId>,
+    ) -> Self {
         require!(
             oracle != env::current_account_id(),
             "oracle cannot be the vault"
@@ -103,11 +112,12 @@ impl RigelVault {
         };
         emit(
             "initialized",
-            json!({ "oracle": oracle, "price_id": price_id, "params": params }),
+            json!({ "oracle": oracle, "price_id": price_id, "params": params, "wnear": wnear }),
         );
         Self {
             oracle,
             price_id,
+            wnear,
             params,
             state,
             token,

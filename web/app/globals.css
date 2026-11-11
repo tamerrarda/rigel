@@ -227,6 +227,17 @@ header.site button { margin: 0; padding: 8px 14px; }
 .curve figcaption { display: flex; justify-content: space-between; color: var(--faint); margin-top: 6px; }
 .curve .k { color: var(--ink); margin: 0; }
 
+.code {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--rule-soft);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--dim);
+  white-space: pre-wrap;
+  word-break: break-all;
+  font: inherit;
+}
+.note b { color: var(--ink); font-weight: 400; }
 .note { color: var(--dim); margin: 12px 0 0; word-break: break-word; }
 .note.bad { color: var(--bad); }
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useApp } from "@/components/Providers";
 import { AuctionCurve } from "@/components/AuctionCurve";
+import { IntentsCard } from "@/components/IntentsCard";
 import { Card, ConnectHint, Note, PageHead, Phase, Stat, useAction } from "@/components/ui";
 import { callVault, TGAS } from "@/lib/near";
 import { bps, near, toYocto, usd } from "@/lib/format";
@@ -41,6 +42,7 @@ export default function VaultPage() {
         <section>
           <DepositCard />
           <BidCard />
+          <IntentsCard />
         </section>
       </div>
     </>

@@ -15,5 +15,6 @@
     "min_fill": "100000000000000000000000",
     "min_deposit": "1000000000000000000000000",
     "settle_bounty_bps": 50
-  }
+  },
+  "wnear": "wrap.testnet"
 }

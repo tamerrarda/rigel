@@ -108,3 +108,19 @@
   .l-section { padding-top: 14vh; }
   .l-nav { gap: 14px; }
 }
+
+/* Alignment mix: sections alternate sides, hero and close sit centred. */
+.l-center { text-align: center; align-items: center; }
+.l-center h1, .l-center h2, .l-center p { margin-left: auto; margin-right: auto; }
+.l-center .l-ctas { justify-content: center; }
+.l-center .l-live { margin-left: auto; margin-right: auto; }
+.l-right { text-align: right; }
+.l-right h2, .l-right p { margin-left: auto; }
+.l-left h2, .l-left p { margin-right: auto; }
+.l-section p { max-width: 44ch; }
+.l-section { padding-top: 26vh; }
+@media (max-width: 760px) {
+  .l-right, .l-center { text-align: left; align-items: flex-start; }
+  .l-right h2, .l-right p, .l-center h1, .l-center h2, .l-center p { margin-left: 0; }
+  .l-center .l-ctas { justify-content: flex-start; }
+}

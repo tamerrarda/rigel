@@ -9,67 +9,41 @@ import "./landing.css";
 
 const REPO = "https://github.com/tamerrarda/rigel";
 
-const SECTIONS: { id: string; k: string; title: string; body: React.ReactNode }[] = [
+const SECTIONS: { id: string; k: string; title: string; body: string; align: "left" | "right" | "center" }[] = [
   {
     id: "trade",
-    k: "01 · where the yield comes from",
+    k: "01 · yield",
     title: "Premium in. Upside capped.",
-    body: (
-      <>
-        Your NEAR backs a call that someone else buys. They pay up front, and that payment joins the pool the moment the
-        auction ends. If NEAR finishes the round below the strike, nothing else happens. If it finishes above, the buyer
-        is paid the excess in NEAR and the pool keeps what it was paid. That is the whole deal: steady income for the
-        top of the move.
-      </>
-    ),
+    body: "Buyers pay you up front and you keep it either way. Above the strike, they get the excess.",
+    align: "right",
   },
   {
     id: "auction",
-    k: "02 · how the call is priced",
+    k: "02 · pricing",
     title: "A falling price, open to everyone.",
-    body: (
-      <>
-        Every round opens a Dutch auction. The premium starts at its ceiling and slides toward a floor; the first buyers
-        willing to pay it fill, in any size. Nobody quotes the vault a price, and a buyer cannot take an option that is
-        already in the money.
-      </>
-    ),
+    body: "Each round's premium starts high and slides down until someone buys. No quotes, no gatekeepers.",
+    align: "left",
   },
   {
     id: "close",
-    k: "03 · how a round settles",
+    k: "03 · settlement",
     title: "Expiry has a window, not a judge.",
-    body: (
-      <>
-        NEAR&apos;s price feeds store a price only when someone publishes one. So Rigel settles on the first price published
-        inside a short window after expiry. Anyone can trigger it and nobody can steer it. If nobody does, the round
-        closes on its own later, without asking the oracle anything.
-      </>
-    ),
+    body: "The first price published after expiry settles the round. Anyone can trigger it, nobody can steer it.",
+    align: "center",
   },
   {
     id: "intents",
     k: "04 · NEAR Intents",
-    title: "USDC on Solana. A bid on NEAR. One message.",
-    body: (
-      <>
-        Buyers do not need to hold NEAR. Through 1Click, USDC on Arbitrum, Solana or Base turns into exactly the wNEAR a
-        bid costs and lands in the vault carrying the bid itself. The vault unwraps it and treats it like any other bid,
-        sending change and payouts to the buyer&apos;s NEAR account.
-      </>
-    ),
+    title: "USDC on Solana. A bid on NEAR.",
+    body: "Buyers pay from Arbitrum, Solana or Base through 1Click. No NEAR needed.",
+    align: "right",
   },
   {
     id: "oracle",
-    k: "05 · what you have to trust",
+    k: "05 · trust",
     title: "One trusted feed, labeled as one.",
-    body: (
-      <>
-        Pyth stopped updating on NEAR in August. Until it is back, this testnet build reads a stand-in that speaks Pyth&apos;s
-        exact format and publishes the median of Binance, Coinbase and Kraken. That feed is trusted. The vault contract is
-        not, and switching it to Pyth is a deploy argument, not a code change.
-      </>
-    ),
+    body: "Pyth is down on NEAR, so testnet reads a stand-in in Pyth's format. One deploy argument switches it back.",
+    align: "left",
   },
 ];
 
@@ -118,13 +92,10 @@ export default function Landing() {
         </nav>
       </header>
 
-      <section className="l-hero">
+      <section className="l-hero l-center">
         <span className="l-kicker">Rigel · covered calls on NEAR</span>
         <h1>Your NEAR underwrites calls. Buyers on any chain pay you for it.</h1>
-        <p>
-          Rigel pools NEAR, writes a cash-settled call on it every round and auctions it off. Bids arrive in NEAR, or in
-          USDC from other chains through NEAR Intents. Every premium goes to the pool.
-        </p>
+        <p>A covered call on pooled NEAR, auctioned every round. Bids from any chain, premiums to the pool.</p>
         <div className="l-ctas">
           <Link className="l-launch big" href="/app/">Open the app</Link>
           <a className="l-ghost" href={REPO} target="_blank" rel="noreferrer">Read the code</a>
@@ -156,16 +127,16 @@ export default function Landing() {
       </section>
 
       {SECTIONS.map((s) => (
-        <section className="l-section" id={s.id} key={s.id}>
+        <section className={`l-section l-${s.align}`} id={s.id} key={s.id}>
           <span className="l-kicker">{s.k}</span>
           <h2>{s.title}</h2>
           <p>{s.body}</p>
         </section>
       ))}
 
-      <section className="l-section l-final">
+      <section className="l-section l-final l-center">
         <h2>Running on NEAR testnet right now.</h2>
-        <p>A keeper opens a round every few minutes. Deposit, bid, or close one yourself. Pre-alpha and unaudited, so testnet NEAR only.</p>
+        <p>Deposit, bid, or close a round yourself. Pre-alpha, unaudited.</p>
         <div className="l-ctas">
           <Link className="l-launch big" href="/app/">Open the app</Link>
           <a className="l-ghost" href={REPO} target="_blank" rel="noreferrer">GitHub</a>

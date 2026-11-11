@@ -1,0 +1,110 @@
+/* Landing page. Same plate, ink and ember as the app; the star is Rigel's blue-white. */
+.landing {
+  --star: #b9d2ff;
+  position: relative;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 0%, #0c1428 0%, var(--void) 70%);
+  overflow-x: hidden;
+}
+.star-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.landing > *:not(.star-canvas) { position: relative; z-index: 1; }
+.landing > .l-top { position: sticky; z-index: 5; }
+
+.l-top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px clamp(18px, 4vw, 48px);
+  background: linear-gradient(to bottom, rgba(5, 6, 10, 0.85), rgba(5, 6, 10, 0));
+}
+.l-brand { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+.l-brand:hover { text-decoration: none; }
+.l-brand span { font-size: 15px; letter-spacing: 0.24em; text-shadow: 1px 0 0 currentColor; }
+.l-nav { display: flex; align-items: center; gap: 22px; margin: 0 0 0 auto; }
+.l-nav a:not(.l-launch) { border-bottom: 0; padding: 0; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
+.l-nav a:not(.l-launch):hover { color: var(--ink); text-decoration: none; }
+
+.l-launch, .l-ghost {
+  display: inline-block;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border: 1px solid var(--ember);
+  background: var(--ember);
+  color: var(--void);
+}
+.l-launch:hover, .l-ghost:hover { text-decoration: none; filter: brightness(1.08); }
+.l-launch.big { padding: 14px 24px; font-size: 12px; }
+.l-ghost { background: transparent; color: var(--ink); border-color: var(--rule); padding: 14px 24px; font-size: 12px; }
+.l-ghost:hover { border-color: var(--ember); }
+
+.l-hero {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px clamp(18px, 4vw, 48px) 60px;
+}
+.l-kicker { color: var(--star); letter-spacing: 0.22em; text-transform: uppercase; font-size: 11px; }
+.l-hero h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(34px, 5.6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: 0.005em;
+  margin: 18px 0 22px;
+  max-width: 15ch;
+}
+.l-hero p, .l-section p { color: var(--dim); font-size: 14px; line-height: 1.75; max-width: 58ch; margin: 0; }
+.l-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+
+.l-live {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 56px 0 0;
+  max-width: 760px;
+  border: 1px solid var(--rule);
+  background: rgba(10, 11, 16, 0.55);
+  backdrop-filter: blur(10px);
+}
+.l-live div { padding: 14px 16px; border-right: 1px solid var(--rule-soft); }
+.l-live div:last-child { border-right: 0; }
+.l-live dt { color: var(--faint); letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px; }
+.l-live dd { margin: 6px 0 4px; font-size: 20px; font-variant-numeric: tabular-nums; }
+.l-live small { color: var(--faint); }
+.l-live-note { color: var(--faint); margin-top: 10px; font-size: 10px; letter-spacing: 0.08em; }
+
+.l-section {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 22vh clamp(18px, 4vw, 48px) 0;
+}
+.l-section h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 52px);
+  line-height: 1.06;
+  margin: 14px 0 20px;
+  max-width: 18ch;
+}
+.l-final { padding-bottom: 18vh; }
+
+.l-foot {
+  border-top: 1px solid var(--rule-soft);
+  padding: 22px clamp(18px, 4vw, 48px) 30px;
+  color: var(--faint);
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 760px) {
+  .l-live { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .l-live div:nth-child(2) { border-right: 0; }
+  .l-live div:nth-child(-n + 2) { border-bottom: 1px solid var(--rule-soft); }
+  .l-section { padding-top: 14vh; }
+  .l-nav { gap: 14px; }
+}

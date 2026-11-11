@@ -1,0 +1,19 @@
+{
+  "oracle": "oracle.rigel-demo.testnet",
+  "price_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+  "params": {
+    "epoch_duration": 1200,
+    "auction_duration": 300,
+    "min_idle_gap": 60,
+    "strike_bps_otm": 50,
+    "premium_start_bps": 150,
+    "premium_floor_bps": 20,
+    "max_staleness": 60,
+    "max_conf_bps": 40,
+    "settle_window": 120,
+    "unresolved_after": 600,
+    "min_fill": "100000000000000000000000",
+    "min_deposit": "1000000000000000000000000",
+    "settle_bounty_bps": 50
+  }
+}

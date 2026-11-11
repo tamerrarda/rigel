@@ -54,13 +54,13 @@ pub trait SelfCallbacks {
 }
 
 impl RigelVault {
-    fn read_price(&self) -> near_sdk::Promise {
+    pub(crate) fn read_price(&self) -> near_sdk::Promise {
         ext_pyth::ext(self.oracle.clone())
             .with_static_gas(GAS_ORACLE_READ)
             .get_price_unsafe(self.price_id.clone())
     }
 
-    fn callbacks(&self) -> ext_self::SelfCallbacksExt {
+    pub(crate) fn callbacks(&self) -> ext_self::SelfCallbacksExt {
         ext_self::ext(env::current_account_id()).with_static_gas(GAS_CALLBACK)
     }
 
@@ -173,36 +173,10 @@ impl RigelVault {
         let bidder = env::predecessor_account_id();
         let attached = env::attached_deposit().as_yoctonear();
         self.lazy_finalize();
-        require!(self.state.phase == Phase::Auction, "no auction is running");
-        let now = now_secs();
-        require!(now < self.state.auction_end, "the auction has ended");
-        require!(notional.0 > 0, "notional must be positive");
-        require!(bidder != env::current_account_id(), "the vault cannot bid");
-        let bps = math::premium_bps(
-            &self.state.params,
-            self.state.opened_at,
-            self.state.auction_end,
-            now,
-        );
-        require!(bps <= max_premium_bps, "premium above your maximum");
-        let remaining = self.state.notional_offered - self.state.notional_sold;
-        require!(remaining > 0, "sold out");
-        let filled = notional.0.min(remaining);
-        let ceiling = max_premium_bps.min(self.state.params.premium_start_bps);
-        let premium_max = math::premium_for(filled, ceiling)
-            .unwrap_or_else(|| env::panic_str("premium arithmetic"));
-        require!(
-            attached >= premium_max + BID_STORAGE_RESERVE,
-            "attach the premium at your maximum plus 0.01 NEAR"
-        );
-        let round = self.state.round;
-        PromiseOrValue::Promise(self.read_price().then(self.callbacks().on_bid_price(
-            round,
-            bidder,
-            notional,
-            max_premium_bps,
-            U128(attached),
-        )))
+        if let Err(reason) = self.check_bid(&bidder, notional.0, max_premium_bps, attached) {
+            env::panic_str(reason)
+        }
+        PromiseOrValue::Promise(self.bid_with_price(bidder, notional, max_premium_bps, attached))
     }
 
     #[private]
@@ -288,6 +262,69 @@ impl RigelVault {
 }
 
 impl RigelVault {
+    /// The checks a bid must pass before its NEAR is taken in. Shared by
+    /// `bid` (native NEAR) and `ft_on_transfer` (wNEAR, e.g. from NEAR Intents).
+    /// Everything is checked again in `on_bid_price` with a fresh price.
+    pub(crate) fn check_bid(
+        &self,
+        bidder: &AccountId,
+        notional: u128,
+        max_premium_bps: u32,
+        attached: u128,
+    ) -> Result<(), &'static str> {
+        if self.state.phase != Phase::Auction {
+            return Err("no auction is running");
+        }
+        let now = now_secs();
+        if now >= self.state.auction_end {
+            return Err("the auction has ended");
+        }
+        if notional == 0 {
+            return Err("notional must be positive");
+        }
+        if *bidder == env::current_account_id() {
+            return Err("the vault cannot bid");
+        }
+        let bps = math::premium_bps(
+            &self.state.params,
+            self.state.opened_at,
+            self.state.auction_end,
+            now,
+        );
+        if bps > max_premium_bps {
+            return Err("premium above your maximum");
+        }
+        let remaining = self.state.notional_offered - self.state.notional_sold;
+        if remaining == 0 {
+            return Err("sold out");
+        }
+        let ceiling = max_premium_bps.min(self.state.params.premium_start_bps);
+        let premium_max =
+            math::premium_for(notional.min(remaining), ceiling).ok_or("premium arithmetic")?;
+        if attached < premium_max + BID_STORAGE_RESERVE {
+            return Err("attach the premium at your maximum plus 0.01 NEAR");
+        }
+        Ok(())
+    }
+
+    /// Reads the price, then fills or refunds in `on_bid_price`.
+    pub(crate) fn bid_with_price(
+        &self,
+        bidder: AccountId,
+        notional: U128,
+        max_premium_bps: u32,
+        attached: u128,
+    ) -> near_sdk::Promise {
+        let round = self.state.round;
+        self.read_price().then(self.callbacks().on_bid_price(
+            round,
+            bidder,
+            notional,
+            max_premium_bps,
+            U128(attached),
+        ))
+    }
+
     fn can_open(&self) -> bool {
         self.state.phase == Phase::Idle
             && now_secs() >= self.state.last_finalize_time + self.params.min_idle_gap

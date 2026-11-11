@@ -1,0 +1,12 @@
+{
+  "name": "@rigel/reporter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/report.ts",
+    "once": "node src/report.ts --once"
+  },
+  "dependencies": {
+    "near-api-js": "7.5.3"
+  }
+}

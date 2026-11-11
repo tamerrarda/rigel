@@ -1,0 +1,6 @@
+packages:
+  - reporter
+  - web
+# secp256k1 ships a pure-JS fallback; its native build script is not needed.
+allowBuilds:
+  secp256k1: false

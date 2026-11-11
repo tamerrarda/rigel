@@ -241,6 +241,13 @@ header.site button { margin: 0; padding: 8px 14px; }
 .note { color: var(--dim); margin: 12px 0 0; word-break: break-word; }
 .note.bad { color: var(--bad); }
 
+/* ---- payout outcomes ---- */
+.outcomes { margin: 0; padding: 4px 18px 0; }
+.outcomes div { padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
+.outcomes dt { color: var(--dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+.outcomes dd { margin: 0; color: var(--faint); line-height: 1.6; }
+.outcomes dd b { color: var(--ink); font-weight: 400; }
+
 .foot { position: relative; z-index: 3; padding: 0 clamp(18px, 3vw, 34px) 34px; color: var(--faint); max-width: 1240px; margin: 0 auto; line-height: 1.65; }
 
 @media (max-width: 900px) {

@@ -78,16 +78,22 @@ function RoundCard() {
 
 function TradeCard() {
   return (
-    <Card title="What you give up">
+    <Card title="How a round pays out">
+      <dl className="rows outcomes">
+        <div>
+          <dt>NEAR at or below the strike</dt>
+          <dd>The call pays nothing. Depositors hold the same NEAR plus the premium.</dd>
+        </div>
+        <div>
+          <dt>NEAR above the strike</dt>
+          <dd>
+            The buyer receives <b>notional × (spot − strike) / spot</b> NEAR from the pool. The premium still stays.
+          </dd>
+        </div>
+      </dl>
       <div className="body">
         <p className="sub">
-          Each round the vault sells a call over the pool: the right to the part of NEAR&apos;s rise past the strike, paid
-          in NEAR. The buyer pays a <b>premium</b> up front, and it stays with depositors whatever happens next.
-        </p>
-        <p className="sub">
-          <b>Below the strike at expiry</b>, the option is worthless and the pool keeps collateral and premium.{" "}
-          <b>Above it</b>, the pool pays the difference out of its collateral, and depositors still keep the premium.
-          You earn the premium every round and give up the rally past the strike. There is no APY on this page.
+          Either way the premium is income for depositors. Its price is any gain NEAR makes beyond the strike that round.
         </p>
       </div>
     </Card>

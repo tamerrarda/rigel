@@ -11,11 +11,13 @@ interface Meteor {
   ttl: number;
   len: number;
   width: number;
+  /** Brightness multiplier: 1 for near meteors, below 1 for distant ones. */
+  glow: number;
 }
 
 /**
- * A quiet starfield with shooting stars: every few seconds a blue-white streak
- * crosses the sky with a fading tail. Pure canvas, no image frames. Under
+ * A starfield with shooting stars: bright blue-white streaks every second or two,
+ * and a steady drizzle of faint, distant ones behind them. Pure canvas, no image frames. Under
  * prefers-reduced-motion it draws the field once and nothing moves.
  */
 export function StarCanvas() {
@@ -32,7 +34,8 @@ export function StarCanvas() {
     let h = 0;
     let raf = 0;
     let last = 0;
-    let nextMeteor = 600;
+    let nextMeteor = 400;
+    let nextFaint = 150;
     const meteors: Meteor[] = [];
 
     // Deterministic field so every load looks the same.
@@ -61,20 +64,22 @@ export function StarCanvas() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    const spawn = () => {
+    /** A near meteor is long and bright; a distant one is short, thin, slow and faint. */
+    const spawn = (distant: boolean) => {
       // Enter from the top or the right edge, travel down and to the left.
       const fromTop = Math.random() < 0.6;
-      const angle = (Math.PI * (0.62 + Math.random() * 0.16)); // ~112°-140°
-      const speed = 0.9 + Math.random() * 0.9; // px per ms
+      const angle = Math.PI * (0.62 + Math.random() * 0.16); // ~112°-140°
+      const speed = distant ? 0.45 + Math.random() * 0.4 : 0.9 + Math.random() * 0.9; // px per ms
       meteors.push({
-        x: fromTop ? w * (0.25 + Math.random() * 0.75) : w + 20,
-        y: fromTop ? -20 : h * Math.random() * 0.5,
+        x: fromTop ? w * (0.1 + Math.random() * 0.9) : w + 20,
+        y: fromTop ? -20 : h * Math.random() * 0.7,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 0,
-        ttl: 900 + Math.random() * 700,
-        len: 140 + Math.random() * 160,
-        width: 1.6 + Math.random() * 1.2,
+        ttl: distant ? 700 + Math.random() * 900 : 900 + Math.random() * 700,
+        len: distant ? 80 + Math.random() * 90 : 140 + Math.random() * 160,
+        width: distant ? 0.9 + Math.random() * 0.6 : 1.6 + Math.random() * 1.2,
+        glow: distant ? 0.5 + Math.random() * 0.3 : 1,
       });
     };
 
@@ -94,7 +99,7 @@ export function StarCanvas() {
     const drawMeteor = (m: Meteor) => {
       // Fade in quickly, out slowly.
       const p = m.life / m.ttl;
-      const alpha = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
+      const alpha = (p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85) * m.glow;
       const speed = Math.hypot(m.vx, m.vy);
       const tx = m.x - (m.vx / speed) * m.len;
       const ty = m.y - (m.vy / speed) * m.len;
@@ -126,9 +131,14 @@ export function StarCanvas() {
 
       nextMeteor -= dt;
       if (nextMeteor <= 0) {
-        spawn();
-        if (Math.random() < 0.18) spawn(); // now and then, a pair
-        nextMeteor = 1400 + Math.random() * 2600;
+        spawn(false);
+        if (Math.random() < 0.25) spawn(false); // now and then, a pair
+        nextMeteor = 900 + Math.random() * 1500;
+      }
+      nextFaint -= dt;
+      if (nextFaint <= 0) {
+        spawn(true);
+        nextFaint = 120 + Math.random() * 380;
       }
       ctx.globalCompositeOperation = "lighter";
       for (let i = meteors.length - 1; i >= 0; i--) {

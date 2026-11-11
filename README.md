@@ -39,18 +39,21 @@ the strike.** There is no APY anywhere in this repository or the interface.
 
 ```mermaid
 stateDiagram-v2
-    direction LR
     [*] --> Idle
-    Idle --> Auction: open_epoch() · anyone<br/>after min_idle_gap
-    Auction --> Active: fills at auction_end<br/>(or sold out early)
-    Auction --> Lapsed: auction_end, nothing sold
-    Active --> Settled: close_round()<br/>price inside the window
-    Active --> Voided: close_round()<br/>price inside the window unusable
-    Active --> Unresolved: close_round()<br/>nobody settled in the window
-    Settled --> Idle
-    Lapsed --> Idle
-    Voided --> Idle
-    Unresolved --> Idle
+    Idle --> Auction: open_epoch(), anyone, after min_idle_gap
+    Auction --> Lapsed: auction ends, nothing sold
+    Auction --> Active: auction ends with fills, or sold out
+    Active --> Settled: close_round(), usable price in the window
+    Active --> Voided: close_round(), unusable price in the window
+    Active --> Unresolved: close_round(), nobody settled in the window
+    Lapsed --> [*]
+    Settled --> [*]
+    Voided --> [*]
+    Unresolved --> [*]
+    note right of Idle
+        Every outcome writes the round record
+        and returns the vault to Idle.
+    end note
 ```
 
 - **Open.** `open_epoch` reads a fresh price (at most `max_staleness` old, confidence interval at most
@@ -81,7 +84,13 @@ how the [1Click API](https://docs.near-intents.org/) delivers a swap's output to
 carries a `customRecipientMsg`:
 
 ```json
-{"bid":{"notional":"1000000000000000000000000","max_premium_bps":150,"beneficiary":"alice.near"}}
+{
+  "bid": {
+    "notional": "1000000000000000000000000",
+    "max_premium_bps": 150,
+    "beneficiary": "alice.near"
+  }
+}
 ```
 
 So someone holding USDC on Arbitrum, Solana, Base or Ethereum asks 1Click for **exactly** the wNEAR the bid needs
@@ -92,6 +101,30 @@ message. In [`intents.rs`](contracts/rigel-vault/src/intents.rs) the vault:
    is returned in full, as NEP-141 requires;
 2. keeps the wNEAR and unwraps it with `near_withdraw`;
 3. runs the same price read and fill as a native bid. Refunds and any payout go to the **beneficiary**'s NEAR account.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as Bidder, USDC on Arbitrum
+    participant C as 1Click
+    participant W as wrap.near
+    participant V as rigel-vault
+    participant P as price-adapter
+    U->>C: quote EXACT_OUTPUT wNEAR, customRecipientMsg = bid
+    C-->>U: deposit address
+    U->>C: send USDC
+    C->>W: ft_transfer_call(vault, amount, msg)
+    W->>V: ft_on_transfer(sender, amount, msg)
+    alt wrong token, not a bid, or the bid would fail
+        V-->>W: unused = amount, returned in full
+    else bid accepted
+        V->>W: near_withdraw(amount)
+        W-->>V: native NEAR
+        V->>P: get_price_unsafe
+        P-->>V: price
+        V-->>U: fill, unused NEAR refunded to the beneficiary
+    end
+```
 
 **What runs where.** 1Click runs on mainnet only and Rigel is deployed on testnet, so the app does two honest
 things: it asks 1Click for a live **dry** quote of the swap leg (real mainnet price and time, nothing moves, no
@@ -129,20 +162,20 @@ needs no change to read real Pyth again: its oracle account and feed id are cons
 
 ```mermaid
 flowchart LR
-    D["Depositor<br/><small>NEAR in, rcNEAR out</small>"] -->|deposit / request_withdraw| V
-    B["Bidder<br/><small>premium only</small>"] -->|bid| V
-    X["Bidder on another chain<br/><small>USDC on Arbitrum, Solana, Base…</small>"] -->|1Click swap| W["wNEAR"]
-    W -->|"ft_transfer_call + bid msg"| V
-    subgraph V["rigel-vault · one NEAR contract"]
-      direction TB
-      T["share token<br/><small>NEP-141 + NEP-145</small>"]
-      L["round ledger<br/><small>pending deposits, withdrawal queue, pps</small>"]
-      A["Dutch auction<br/><small>linear decay, partial fills</small>"]
-      S["settlement<br/><small>cash-settled, bounded by collateral</small>"]
-    end
-    V -->|"get_price_unsafe (Promise + callback)"| O["price-adapter<br/><small>Pyth-shaped, testnet stand-in</small>"]
-    R["reporter / keeper<br/><small>median of 3 exchanges</small>"] -->|push_price| O
-    R -.->|open_epoch / close_round<br/>anyone may call| V
+    D["Depositor: NEAR in, rcNEAR out"]
+    B["Bidder: pays premium in NEAR"]
+    X["Bidder on another chain: USDC on Arbitrum, Solana, Base"]
+    OC["1Click swap"]
+    V["rigel-vault, one NEAR contract: share token NEP-141, round ledger, Dutch auction, cash settlement"]
+    O["price-adapter: Pyth-shaped, testnet stand-in"]
+    R["reporter and keeper: median of 3 exchanges"]
+    D -->|"deposit, request_withdraw"| V
+    B -->|"bid"| V
+    X --> OC
+    OC -->|"wNEAR via ft_transfer_call with bid msg"| V
+    V -->|"get_price_unsafe, Promise and callback"| O
+    R -->|"push_price"| O
+    R -.->|"open_epoch, close_round: anyone may call"| V
 ```
 
 | Path | What |
@@ -217,8 +250,10 @@ vault accepts bids in; set it to `null` to turn the wNEAR path off. The last com
 reading it would receive and keeps a **shadow ledger**: every yoctoNEAR attached and every transfer receipt is
 tracked, and after every step the contract's own liabilities must equal the NEAR it holds for users, exactly. It
 covers all four outcomes, in-the-money bid refusal, stale and wide-confidence prices, the idle gap, duplicate
-callbacks, pending deposits and queued withdrawals across rounds, double claims, and a five-round run with mixed
-outcomes. Pure arithmetic (`math.rs`) is tested separately, including solvency for any spot.
+callbacks, pending deposits and queued withdrawals across rounds, double claims, five consecutive settled rounds
+with spots below and above the strike, and the wNEAR path (wrong token, malformed message, refused and underfunded
+bids, a failed unwrap, refunds to the beneficiary). Pure arithmetic (`math.rs`) is tested separately, including
+solvency for any spot.
 
 ## Honest limitations
 
@@ -232,7 +267,8 @@ outcomes. Pure arithmetic (`math.rs`) is tested separately, including solvency f
   refunded); round records are paid by the contract's own balance.
 - **Cross-chain bids are proven on testnet up to the delivery leg.** The swap leg is a live mainnet dry quote;
   a real 1Click swap needs a mainnet deployment. 1Click marks `customRecipientMsg` experimental, and how much gas its
-  `ft_transfer_call` forwards is not documented; the vault's wNEAR path needs about 100 Tgas.
+  `ft_transfer_call` forwards is not documented. The vault's wNEAR path burns about 17 Tgas but reserves gas for its
+callbacks, so `ft_on_transfer` needs about 90 Tgas forwarded to it.
 - If `near_withdraw` ever failed, the wNEAR would stay in the vault, recorded by an `unwrap_failed` event, with no
   automatic return.
 - **Not built yet:** payouts back to the origin chain, multiple vaults, an upgrade path, fuzzing.

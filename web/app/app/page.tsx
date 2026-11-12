@@ -6,7 +6,7 @@ import { useApp } from "@/components/Providers";
 import { AuctionCurve } from "@/components/AuctionCurve";
 import { IntentsCard } from "@/components/IntentsCard";
 import { Card, ConnectHint, Note, PageHead, Phase, Stat, nextAuctionText, useAction } from "@/components/ui";
-import { callVault, TGAS } from "@/lib/near";
+import { assertAuctionOpen, callVault, TGAS } from "@/lib/near";
 import { bps, near, toYocto, usd } from "@/lib/format";
 
 const STORAGE = 10n ** 22n; // 0.01 NEAR, refunded unused
@@ -220,6 +220,7 @@ function BidCard() {
           onClick={() =>
             run("Bid", async () => {
               const y = toYocto(amount);
+              await assertAuctionOpen();
               await callVault(wallet.selector!, "bid", { notional: y.toString(), max_premium_bps: maxBps }, premiumMax + STORAGE);
             })
           }

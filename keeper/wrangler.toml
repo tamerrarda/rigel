@@ -12,7 +12,7 @@ crons = ["* * * * *"]
 NEAR_ACCOUNT = "rigel-demo.testnet"
 ADAPTER = "oracle.rigel-demo.testnet"
 VAULT = "vault.rigel-demo.testnet"
-NEAR_RPC = "https://test.rpc.fastnear.com"
+NEAR_RPC = "https://rpc.testnet.near.org,https://test.rpc.fastnear.com"
 
 [observability]
 enabled = true

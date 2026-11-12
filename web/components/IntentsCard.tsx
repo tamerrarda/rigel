@@ -4,7 +4,7 @@ import { useState } from "react";
 import { actionCreators } from "@near-wallet-selector/core";
 import { useApp } from "./Providers";
 import { Card, ConnectHint, Note, nextAuctionText, useAction } from "./ui";
-import { TGAS, VAULT, view } from "@/lib/near";
+import { assertAuctionOpen, TGAS, VAULT, view } from "@/lib/near";
 import { bps, near, toYocto } from "@/lib/format";
 import { bidMessage, ORIGINS, previewRoute, WNEAR_TESTNET, type RoutePreview } from "@/lib/intents";
 
@@ -18,6 +18,7 @@ export function IntentsCard() {
   const [amount, setAmount] = useState("1");
   const [origin, setOrigin] = useState(ORIGINS[0].id);
   const [preview, setPreview] = useState<RoutePreview | null>(null);
+  const [quotedFor, setQuotedFor] = useState(0n);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState(false);
 
@@ -42,6 +43,7 @@ export function IntentsCard() {
     setPreview(null);
     setPreviewError(null);
     try {
+      setQuotedFor(wnear);
       setPreview(await previewRoute(o, wnear));
     } catch (err) {
       setPreviewError((err as Error).message);
@@ -53,6 +55,7 @@ export function IntentsCard() {
   const sendOnTestnet = () =>
     run("wNEAR bid", async () => {
       const sel = wallet.selector!;
+      await assertAuctionOpen();
       const registered = await view<unknown>(WNEAR_TESTNET, "storage_balance_of", { account_id: wallet.accountId });
       const actions = [
         ...(registered ? [] : [actionCreators.functionCall("storage_deposit", { account_id: wallet.accountId }, 10n * TGAS, WRAP_STORAGE)]),
@@ -96,7 +99,10 @@ export function IntentsCard() {
           <p className="note">
             1Click, mainnet, now: <b>{preview.amountIn}</b> {o.label} buys exactly {near(preview.wnear)} wNEAR in about {preview.timeEstimate}s.
             {preview.atMinimum && (
-              <> This route has a minimum above the {near(wnear)} wNEAR this bid needs, so the quote is for that minimum.</>
+              <> This route has a minimum above the {near(quotedFor)} wNEAR the bid needed, so the quote is for that minimum.</>
+            )}
+            {quotedFor !== wnear && (
+              <> The premium has moved since: the bid now needs {near(wnear)} wNEAR, so quote again for a current price.</>
             )}
           </p>
         )}

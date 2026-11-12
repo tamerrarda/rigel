@@ -92,18 +92,45 @@ export function b58encode(b: Uint8Array): string {
   return s;
 }
 
+/** JSON-RPC error causes that mean "this endpoint, not this request": try the next one. */
+const ENDPOINT_TROUBLE = new Set(["TIMEOUT_ERROR", "INTERNAL_ERROR", "NO_SYNCED_BLOCKS", "UNAVAILABLE_SHARD"]);
+
 export class Rpc {
-  constructor(private url: string) {}
+  private urls: string[];
+
+  /** `urls` is a comma-separated list, tried in order on rate limits and endpoint failures. */
+  constructor(urls: string) {
+    this.urls = urls.split(",").map((u) => u.trim()).filter(Boolean);
+  }
 
   async call<T = any>(method: string, params: unknown): Promise<T> {
-    const res = await fetch(this.url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: "rigel", method, params }),
-    });
-    const j: any = await res.json();
-    if (j.error) throw new Error(`${method}: ${JSON.stringify(j.error.cause ?? j.error.data ?? j.error)}`);
-    return j.result as T;
+    const body = JSON.stringify({ jsonrpc: "2.0", id: "rigel", method, params });
+    let last = "no RPC endpoint configured";
+    for (const url of this.urls) {
+      let j: any;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body,
+          signal: AbortSignal.timeout(15_000),
+        });
+        j = await res.json();
+      } catch (err) {
+        last = `${url}: ${(err as Error).message}`;
+        continue;
+      }
+      if (!j.error) return j.result as T;
+      const cause = j.error.cause?.name;
+      last = `${method}: ${JSON.stringify(j.error.cause ?? j.error.data ?? j.error)}`;
+      // Rate limits (-429 and similar) and node trouble fall through; a real answer about the request does not.
+      if (j.error.code === -429 || (cause && ENDPOINT_TROUBLE.has(cause))) {
+        console.log(`${url} unavailable for ${method}, trying the next endpoint`);
+        continue;
+      }
+      throw new Error(last);
+    }
+    throw new Error(last);
   }
 
   async view<T = any>(contract: string, method: string, args: unknown = {}): Promise<T> {
@@ -114,6 +141,7 @@ export class Rpc {
       method_name: method,
       args_base64: toBase64(new TextEncoder().encode(JSON.stringify(args))),
     });
+    if (r.error) throw new Error(`${contract}.${method}: ${r.error}`);
     return JSON.parse(new TextDecoder().decode(Uint8Array.from(r.result)));
   }
 

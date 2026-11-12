@@ -20,15 +20,16 @@ export function useWallet(): WalletState {
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     (async () => {
-      const [{ setupWalletSelector }, { setupModal }, mnw, intear] = await Promise.all([
+      const [{ setupWalletSelector }, { setupModal }, meteor, mnw, intear] = await Promise.all([
         import("@near-wallet-selector/core"),
         import("@near-wallet-selector/modal-ui"),
+        import("@near-wallet-selector/meteor-wallet"),
         import("@near-wallet-selector/my-near-wallet"),
         import("@near-wallet-selector/intear-wallet"),
       ]);
       const s = await setupWalletSelector({
         network: NETWORK,
-        modules: [mnw.setupMyNearWallet(), intear.setupIntearWallet()],
+        modules: [meteor.setupMeteorWallet(), mnw.setupMyNearWallet(), intear.setupIntearWallet()],
       });
       const m = setupModal(s, { contractId: VAULT });
       const sub = s.store.observable.subscribe((state) => {

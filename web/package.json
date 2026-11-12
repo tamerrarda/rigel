@@ -9,9 +9,11 @@
   },
   "dependencies": {
     "@near-wallet-selector/core": "10.1.4",
+    "@near-wallet-selector/intear-wallet": "10.1.4",
+    "@near-wallet-selector/meteor-wallet": "10.1.4",
     "@near-wallet-selector/modal-ui": "10.1.4",
     "@near-wallet-selector/my-near-wallet": "10.1.4",
-    "@near-wallet-selector/intear-wallet": "10.1.4",
+    "near-api-js": "6.5.1",
     "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1"

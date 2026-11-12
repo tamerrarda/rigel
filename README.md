@@ -243,7 +243,7 @@ premium to whoever closes the round.
 ### Using the app
 
 [rigelfinance.vercel.app/app/](https://rigelfinance.vercel.app/app/) reads `vault.rigel-demo.testnet` directly and
-signs with a NEAR testnet wallet (MyNearWallet or Intear).
+signs with a NEAR testnet wallet (Meteor, MyNearWallet or Intear).
 
 | Page | What it is for |
 |---|---|

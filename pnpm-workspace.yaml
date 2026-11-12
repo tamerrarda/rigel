@@ -1,6 +1,10 @@
 packages:
   - reporter
   - web
-# secp256k1 ships a pure-JS fallback; its native build script is not needed.
+  - keeper
 allowBuilds:
+  # wrangler bundles with esbuild and runs Workers locally in workerd.
+  esbuild: true
+  # secp256k1 ships a pure-JS fallback; its native build script is not needed.
   secp256k1: false
+  workerd: true

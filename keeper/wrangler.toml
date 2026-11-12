@@ -1,0 +1,18 @@
+# Cloudflare Worker that keeps the testnet demo moving. Free plan: one cron
+# trigger, well under the daily request and per-run CPU limits.
+name = "rigel-keeper"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+NEAR_ACCOUNT = "rigel-demo.testnet"
+ADAPTER = "oracle.rigel-demo.testnet"
+VAULT = "vault.rigel-demo.testnet"
+NEAR_RPC = "https://test.rpc.fastnear.com"
+
+[observability]
+enabled = true

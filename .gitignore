@@ -8,3 +8,5 @@ out/
 *.log
 neardev/
 *.tsbuildinfo
+.dev.vars
+.wrangler/

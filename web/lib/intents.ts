@@ -34,10 +34,28 @@ export function bidMessage(notional: bigint, maxPremiumBps: number, beneficiary:
 export interface RoutePreview {
   amountIn: string;
   timeEstimate: number;
+  /** The wNEAR the quote is for: the bid's amount, or the route's minimum when the bid is below it. */
+  wnear: bigint;
+  /** True when the route has a minimum above what the bid needs, so the quote is for that minimum. */
+  atMinimum: boolean;
 }
 
-/** A live dry quote: how much of `origin` buys exactly `wnear` yoctoNEAR of wNEAR right now. */
+/**
+ * A live dry quote: how much of `origin` buys exactly `wnear` yoctoNEAR of wNEAR
+ * right now. Some bridges have a minimum (Base's is a few hundredths of a NEAR);
+ * below it, the route is quoted at that minimum instead and says so.
+ */
 export async function previewRoute(origin: Origin, wnear: bigint): Promise<RoutePreview> {
+  try {
+    return { ...(await quoteOnce(origin, wnear)), wnear, atMinimum: false };
+  } catch (err) {
+    const min = (err as { minimum?: bigint }).minimum;
+    if (min === undefined || min <= wnear) throw err;
+    return { ...(await quoteOnce(origin, min)), wnear: min, atMinimum: true };
+  }
+}
+
+async function quoteOnce(origin: Origin, wnear: bigint): Promise<{ amountIn: string; timeEstimate: number }> {
   const res = await fetch(`${ONECLICK}/quote`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -60,7 +78,11 @@ export async function previewRoute(origin: Origin, wnear: bigint): Promise<Route
   if (!res.ok || !body.quote) {
     const msg: string = body.message ?? `HTTP ${res.status}`;
     const min = /at least (\d+)/.exec(msg);
-    throw new Error(min ? `below this route's minimum (${(Number(min[1]) / 1e24).toFixed(3)} wNEAR)` : msg);
+    if (min) {
+      const minimum = BigInt(min[1]);
+      throw Object.assign(new Error(`below this route's minimum (${(Number(minimum) / 1e24).toFixed(3)} wNEAR)`), { minimum });
+    }
+    throw new Error(msg);
   }
   return { amountIn: body.quote.amountInFormatted, timeEstimate: body.quote.timeEstimate };
 }

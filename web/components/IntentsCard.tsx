@@ -94,7 +94,10 @@ export function IntentsCard() {
         </div>
         {preview && (
           <p className="note">
-            1Click, mainnet, now: <b>{preview.amountIn}</b> {o.label} buys exactly {near(wnear)} wNEAR in about {preview.timeEstimate}s.
+            1Click, mainnet, now: <b>{preview.amountIn}</b> {o.label} buys exactly {near(preview.wnear)} wNEAR in about {preview.timeEstimate}s.
+            {preview.atMinimum && (
+              <> This route has a minimum above the {near(wnear)} wNEAR this bid needs, so the quote is for that minimum.</>
+            )}
           </p>
         )}
         {previewError && <p className="note bad">Route quote: {previewError}</p>}

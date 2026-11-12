@@ -1,7 +1,8 @@
 // Rigel reporter and keeper as a Cloudflare Worker on a one-minute cron.
 //
-// Each run pushes NEAR/USD to the price adapter twice, 30 seconds apart, so the
-// stored price is never much older than half a minute, and after each push
+// Each run pushes NEAR/USD to the price adapter three times, 20 seconds apart,
+// so the stored price stays well inside the vault's 60-second freshness bound
+// even when a run starts late or one push fails, and after each push
 // opens or closes a round when one is due. Same logic as reporter/src/report.ts,
 // which stays the way to run it from a laptop.
 //
@@ -21,7 +22,8 @@ export interface Env {
 const NEAR_USD = "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750";
 const EXPO = -8;
 const TGAS = 1_000_000_000_000n;
-const SECOND_PUSH_AFTER_MS = 30_000;
+const TICKS_PER_RUN = 3;
+const TICK_SPACING_MS = 20_000;
 
 async function getJson(url: string): Promise<any> {
   const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
@@ -95,9 +97,10 @@ async function run(env: Env): Promise<void> {
   const rpc = new Rpc(env.NEAR_RPC);
   const signer = await signerFrom(env.NEAR_ACCOUNT, env.REPORTER_KEY);
   const safe = (p: Promise<void>) => p.catch((err) => console.error((err as Error).message));
-  await safe(tick(env, rpc, signer));
-  await new Promise((r) => setTimeout(r, SECOND_PUSH_AFTER_MS));
-  await safe(tick(env, rpc, signer));
+  for (let i = 0; i < TICKS_PER_RUN; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, TICK_SPACING_MS));
+    await safe(tick(env, rpc, signer));
+  }
 }
 
 export default {

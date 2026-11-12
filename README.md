@@ -7,6 +7,8 @@
 **Covered call vaults on NEAR.**
 Deposit NEAR, an on-chain auction discovers what a call over it is worth, and the premium goes to the depositors.
 
+**[rigelfinance.vercel.app](https://rigelfinance.vercel.app)** · [open the app](https://rigelfinance.vercel.app/app/)
+
 `pre-alpha` · `NEAR testnet` · `unaudited` · `Apache-2.0`
 
 </div>
@@ -189,6 +191,7 @@ flowchart LR
 
 | Account | What |
 |---|---|
+| [rigelfinance.vercel.app](https://rigelfinance.vercel.app) | The web app (landing at `/`, app at `/app/`), reading this deployment |
 | [`vault.rigel-demo.testnet`](https://testnet.nearblocks.io/address/vault.rigel-demo.testnet) | The vault; accepts wNEAR bids from `wrap.testnet` |
 | [`oracle.rigel-demo.testnet`](https://testnet.nearblocks.io/address/oracle.rigel-demo.testnet) | The price adapter; reporter `rigel-demo.testnet` |
 

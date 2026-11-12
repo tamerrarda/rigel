@@ -4,7 +4,7 @@
 
 # Rigel
 
-**Covered call vaults on NEAR.**
+**A covered call vault on NEAR.**
 Deposit NEAR, an on-chain auction discovers what a call over it is worth, and the premium goes to the depositors.
 
 **[rigelfinance.vercel.app](https://rigelfinance.vercel.app)** · [open the app](https://rigelfinance.vercel.app/app/)

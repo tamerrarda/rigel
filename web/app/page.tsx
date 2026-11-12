@@ -34,8 +34,8 @@ const SECTIONS: { id: string; k: string; title: string; body: string; align: "le
   {
     id: "intents",
     k: "04 · NEAR Intents",
-    title: "USDC on Solana. A bid on NEAR.",
-    body: "Buyers pay from Arbitrum, Solana or Base through 1Click. No NEAR needed.",
+    title: "Built for bids from other chains.",
+    body: "The vault takes bids as wNEAR, the token NEAR Intents delivers. Testnet runs that leg live; the app quotes the USDC route from Arbitrum, Solana or Base.",
     align: "right",
   },
   {
@@ -94,8 +94,8 @@ export default function Landing() {
 
       <section className="l-hero l-center">
         <span className="l-kicker">Rigel · covered calls on NEAR</span>
-        <h1>Your NEAR underwrites calls. Buyers on any chain pay you for it.</h1>
-        <p>A covered call on pooled NEAR, auctioned every round. Bids from any chain, premiums to the pool.</p>
+        <h1>Your NEAR underwrites calls. Buyers pay you for it.</h1>
+        <p>A covered call on pooled NEAR, auctioned every round. Bids in NEAR or as wNEAR from NEAR Intents, premiums to the pool.</p>
         <div className="l-ctas">
           <Link className="l-launch big" href="/app/">Open the app</Link>
           <a className="l-ghost" href={REPO} target="_blank" rel="noreferrer">Read the code</a>

@@ -210,6 +210,30 @@ flowchart LR
 
 The vault was redeployed between the two to add the wNEAR path, which changed its state layout.
 
+**Every outcome, end to end.** [`reporter/src/e2e.ts`](reporter/src/e2e.ts) drives a second deployment
+(`vault.rigel-test.testnet`, `oracle.rigel-test.testnet`, same wasm, 4-minute rounds) where the script itself is the
+reporter, so it can publish the prices each outcome needs. All 50 steps passed, over two runs (a network
+timeout cut the first one short and the script resumed it). Afterwards every depositor had withdrawn and the
+vault's balance still covered its storage and every liability.
+
+| Scenario | Transaction |
+|---|---|
+| Settled above the strike, closed by a third party who earns the bounty | [`GZ2WjMv4…`](https://testnet.nearblocks.io/txns/GZ2WjMv4yLG75yw4Hynz7n3VpFavRcfHdqAt7uwN4LMi) |
+| Option holder claims the payout; a second claim is refused | [`EBuf5CR2…`](https://testnet.nearblocks.io/txns/EBuf5CR2D9agr3D6jNqv4yHxyigF7BfePCLrgG3WgNHQ) |
+| Voided: the price in the window has a 1.4 % confidence interval | [`53KMcT4z…`](https://testnet.nearblocks.io/txns/53KMcT4zY3ER4qwKzUGg9eaTM47WSKTECjbeNh8teN7A) |
+| Option holder takes the voided premium back | [`AkKCVuv4…`](https://testnet.nearblocks.io/txns/AkKCVuv4eav1YjSM7wtsDN86Z5WypPVuqVjGjcJ7nrPJ) |
+| Unresolved: the oracle's price was published after the window | [`AU4agFfQ…`](https://testnet.nearblocks.io/txns/AU4agFfQ2NXAWRQcwqKhQhESuXZsNzityhJDSWxua6gf) |
+| Unresolved past `unresolved_after`, without calling the oracle | [`9FXXk7FQ…`](https://testnet.nearblocks.io/txns/9FXXk7FQjXQzpxqXsyenoXV1LmYuQcsh4rEjoYtaHsyQ) |
+| Lapsed: an auction that sold nothing | [`5N74UGtz…`](https://testnet.nearblocks.io/txns/5N74UGtzAbT5D3uBr2NSr8GajBDdV7YcnbUtcTcP9osb) |
+| Deposit during a round is queued, then cancelled for a full refund | [`iUTGTz7w…`](https://testnet.nearblocks.io/txns/iUTGTz7wYayZwQ3BE1gJhyfH3qhgunWEniAkQEGUwPZ) |
+| Withdrawal requested during a round, paid at that round's share price | [`5CesPNwd…`](https://testnet.nearblocks.io/txns/5CesPNwdHk9emA9gcwHSgAwVb5c2bmYX19TACpaqzc2Q) |
+| rcNEAR moved with `ft_transfer`, then redeemed by its new holder | [`4THhVVit…`](https://testnet.nearblocks.io/txns/4THhVVitDnLQ51U4ABJWPKLcB3an4Rer5m4ntw6ThcQA) |
+| wNEAR with a malformed message comes back in full | [`HYXk9h2X…`](https://testnet.nearblocks.io/txns/HYXk9h2XpumF6wqttZQDiEU7mzcadUkpAWHXo4VPQ7xj) |
+| Refused: bid above the bidder's ceiling | [`51mcnZjp…`](https://testnet.nearblocks.io/txns/51mcnZjpu9oYxAofNizYpE2SVW2xKYb6HuDnTRmt2pkT) |
+| Refused: bid after the auction | [`C7NMFD7U…`](https://testnet.nearblocks.io/txns/C7NMFD7UnotL11w9jRvJvmkkRXuH6jn88f8ma6Vr2nhV) |
+| Refused: closing before expiry | [`Hi95fDNJ…`](https://testnet.nearblocks.io/txns/Hi95fDNJZK45rhYrKPBTRraa3YPXSSdgfh657RQ73P6S) |
+| Refused: a price push from an account that is not the reporter | [`5rPdHNBb…`](https://testnet.nearblocks.io/txns/5rPdHNBbw7whUnWcZbmH9gCC8eeqobFjXCfN7yvmjysm) |
+
 Demo parameters, short so a whole round fits in a demo: 20-minute rounds, 5-minute auction falling from 1.50 % to
 0.20 % of notional, strike 0.50 % above spot, 2-minute settlement window, `Unresolved` after 10 minutes, 0.5 % of
 premium to whoever closes the round.

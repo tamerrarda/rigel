@@ -10,3 +10,4 @@ neardev/
 *.tsbuildinfo
 .dev.vars
 .wrangler/
+.vercel

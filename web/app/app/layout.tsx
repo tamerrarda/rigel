@@ -14,6 +14,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           prices in Pyth&apos;s format, because Pyth on NEAR has not updated since 26 Aug 2026. The vault reads it
           exactly as it would read Pyth.
         </p>
+        <p>
+          <a href="https://x.com/rigel_finance" target="_blank" rel="noreferrer">X: @rigel_finance</a> ·{" "}
+          <a href="https://github.com/tamerrarda/rigel" target="_blank" rel="noreferrer">GitHub</a>
+        </p>
       </footer>
     </Providers>
   );

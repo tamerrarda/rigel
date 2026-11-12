@@ -19,6 +19,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@rigel_finance",
     title: "Rigel · a covered call vault on NEAR",
     description: DESCRIPTION,
     images: ["/og.png"],

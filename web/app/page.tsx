@@ -8,6 +8,7 @@ import { near, usd } from "@/lib/format";
 import "./landing.css";
 
 const REPO = "https://github.com/tamerrarda/rigel";
+const X = "https://x.com/rigel_finance";
 
 const SECTIONS: { id: string; k: string; title: string; body: string; align: "left" | "right" | "center" }[] = [
   {
@@ -87,6 +88,7 @@ export default function Landing() {
           <span>RIGEL</span>
         </Link>
         <nav className="l-nav">
+          <a href={X} target="_blank" rel="noreferrer">X</a>
           <a href={REPO} target="_blank" rel="noreferrer">Code</a>
           <Link className="l-launch" href="/app/">Open the app</Link>
         </nav>
@@ -144,7 +146,8 @@ export default function Landing() {
       </section>
 
       <footer className="l-foot">
-        Built for NEAR HACKATHON · Apache-2.0 · testnet only
+        Built for NEAR HACKATHON · Apache-2.0 · testnet only ·{" "}
+        <a href={X} target="_blank" rel="noreferrer">@rigel_finance</a>
       </footer>
     </div>
   );

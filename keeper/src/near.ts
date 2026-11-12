@@ -115,6 +115,11 @@ export class Rpc {
           body,
           signal: AbortSignal.timeout(15_000),
         });
+        if (res.status === 429 || res.status >= 500) {
+          last = `${url}: HTTP ${res.status}`;
+          console.log(`${url} unavailable for ${method} (HTTP ${res.status}), trying the next endpoint`);
+          continue;
+        }
         j = await res.json();
       } catch (err) {
         last = `${url}: ${(err as Error).message}`;
@@ -124,7 +129,7 @@ export class Rpc {
       const cause = j.error.cause?.name;
       last = `${method}: ${JSON.stringify(j.error.cause ?? j.error.data ?? j.error)}`;
       // Rate limits (-429 and similar) and node trouble fall through; a real answer about the request does not.
-      if (j.error.code === -429 || (cause && ENDPOINT_TROUBLE.has(cause))) {
+      if (Math.abs(j.error.code) === 429 || (cause && ENDPOINT_TROUBLE.has(cause))) {
         console.log(`${url} unavailable for ${method}, trying the next endpoint`);
         continue;
       }

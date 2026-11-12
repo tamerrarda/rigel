@@ -9,7 +9,7 @@ export const NETWORK = "testnet" as const;
 // through to the next, so one provider's limits never stall the page.
 export const RPCS = process.env.NEXT_PUBLIC_NEAR_RPC
   ? [process.env.NEXT_PUBLIC_NEAR_RPC]
-  : ["https://rpc.testnet.near.org", "https://test.rpc.fastnear.com"];
+  : ["https://test.rpc.fastnear.com", "https://near-testnet.drpc.org", "https://rpc.testnet.near.org"];
 export const VAULT = process.env.NEXT_PUBLIC_VAULT ?? "vault.rigel-demo.testnet";
 export const ORACLE = process.env.NEXT_PUBLIC_ORACLE ?? "oracle.rigel-demo.testnet";
 export const PRICE_ID = "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750";

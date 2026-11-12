@@ -43,6 +43,33 @@ export function PageHead({ title, tag, children, right }: { title: string; tag?:
   );
 }
 
+/** The hosted keeper runs once a minute, so anything it does lands within about this long. */
+const KEEPER_LAG = 60;
+
+/**
+ * When bidding is next possible: now (with the seconds left), or an estimate of
+ * when the next auction opens. The estimate assumes the keeper closes and opens
+ * rounds as soon as it may; anyone can do both earlier by hand.
+ */
+export function nextAuction(e: Epoch, now: number): { open: true; left: number } | { open: false; at: number } {
+  if (e.phase === "Auction" && now < Number(e.auction_end)) return { open: true, left: Number(e.auction_end) - now };
+  const gap = e.params.min_idle_gap;
+  let at: number;
+  if (e.phase === "Idle") at = Math.max(now, Number(e.next_open_at));
+  else if (e.phase === "Active" && !e.outcome_pending) at = Math.max(now, Number(e.expiry)) + KEEPER_LAG + gap;
+  else at = now + KEEPER_LAG + gap; // an ended auction waiting to be recorded
+  return { open: false, at: at + KEEPER_LAG };
+}
+
+/** "about 12m (around 14:32 UTC)" for an estimate, "under a minute" when close. */
+export function nextAuctionText(e: Epoch, now: number): string {
+  const n = nextAuction(e, now);
+  if (n.open) return `open now, ends in ${span(n.left)}`;
+  const wait = n.at - now;
+  if (wait <= 90) return "opens within about a minute or two";
+  return `opens in about ${Math.round(wait / 60)}m (around ${clock(n.at).slice(0, 5)} UTC)`;
+}
+
 /** What the vault is doing right now, in one line. */
 export function phaseFace(e: Epoch, now: number): { label: string; note: string; tone: string } {
   if (e.round === 0) return { label: "Waiting", note: "No round has run yet.", tone: "idle" };
@@ -51,7 +78,12 @@ export function phaseFace(e: Epoch, now: number): { label: string; note: string;
   }
   if (e.phase === "Active") {
     const left = Number(e.expiry) - now;
-    if (left > 0) return { label: "Option live", note: `Expires in ${span(left)}, at ${clock(e.expiry)}.`, tone: "live" };
+    if (left > 0)
+      return {
+        label: "Option live",
+        note: `Expires in ${span(left)}, at ${clock(e.expiry)}. Next auction ${nextAuctionText(e, now)}.`,
+        tone: "live",
+      };
     return { label: "Settling", note: `Expired. A price inside the window settles it, until ${clock(e.settle_window_end)}.`, tone: "hot" };
   }
   const wait = Number(e.next_open_at) - now;

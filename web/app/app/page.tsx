@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useApp } from "@/components/Providers";
 import { AuctionCurve } from "@/components/AuctionCurve";
 import { IntentsCard } from "@/components/IntentsCard";
-import { Card, ConnectHint, Note, PageHead, Phase, Stat, useAction } from "@/components/ui";
+import { Card, ConnectHint, Note, PageHead, Phase, Stat, nextAuctionText, useAction } from "@/components/ui";
 import { callVault, TGAS } from "@/lib/near";
 import { bps, near, toYocto, usd } from "@/lib/format";
 
@@ -209,7 +209,10 @@ function BidCard() {
               Max premium <b>{bps(maxBps)}</b>, at most <b>{near(premiumMax)} NEAR</b>. Any unused part is refunded.
             </>
           ) : (
-            "No auction is running."
+            <>
+              No auction is running. The next one <b>{nextAuctionText(e, chain.now)}</b>. The keeper opens rounds about
+              once a minute; anyone can open one from <i>Permissionless</i> once the idle gap has passed.
+            </>
           )}
         </p>
         <button

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { actionCreators } from "@near-wallet-selector/core";
 import { useApp } from "./Providers";
-import { Card, ConnectHint, Note, useAction } from "./ui";
+import { Card, ConnectHint, Note, nextAuctionText, useAction } from "./ui";
 import { TGAS, VAULT, view } from "@/lib/near";
 import { bps, near, toYocto } from "@/lib/format";
 import { bidMessage, ORIGINS, previewRoute, WNEAR_TESTNET, type RoutePreview } from "@/lib/intents";
@@ -105,7 +105,7 @@ export function IntentsCard() {
           does not run on testnet, so here the delivery leg is made from your wallet through {WNEAR_TESTNET}: the same
           call, the same message, the same code path in the vault.
         </p>
-        {!open && <p className="sub">No auction is running right now.</p>}
+        {!open && <p className="sub">No auction is running right now.{e ? ` The next one ${nextAuctionText(e, chain.now)}.` : ""}</p>}
         <ConnectHint />
         <Note note={note} />
       </div>

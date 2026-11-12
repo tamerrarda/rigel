@@ -238,6 +238,81 @@ Demo parameters, short so a whole round fits in a demo: 20-minute rounds, 5-minu
 0.20 % of notional, strike 0.50 % above spot, 2-minute settlement window, `Unresolved` after 10 minutes, 0.5 % of
 premium to whoever closes the round.
 
+## Documentation
+
+### Using the app
+
+[rigelfinance.vercel.app/app/](https://rigelfinance.vercel.app/app/) reads `vault.rigel-demo.testnet` directly and
+signs with a NEAR testnet wallet (MyNearWallet or Intear).
+
+| Page | What it is for |
+|---|---|
+| **Vault** | The live round (strike, notional sold, premium, the auction curve), when the next auction opens, and the forms to deposit, buy the call, open or close a round, and bid with wNEAR |
+| **Rounds** | Every finalized round and how it ended |
+| **Claims** | Your fills, what each is owed once its round finalizes, and the button to claim it |
+| **My positions** | Your rcNEAR, its indicative value, and any deposit or withdrawal waiting on a round |
+
+A deposit made while no round is live mints rcNEAR at once; during a round it waits and joins the next one (it can
+be cancelled until then). A withdrawal works the same way: paid at once when idle, otherwise paid at the share
+price the round finalizes at. A bid needs an auction to be running and the price to be below the strike.
+
+### Contract reference: `rigel-vault`
+
+Amounts are yoctoNEAR as JSON strings, basis points are integers (100 = 1 %), times are Unix seconds.
+
+**Calls**
+
+| Method | Attach | Who | Does |
+|---|---|---|---|
+| `deposit(amount)` | `amount` + ~0.01 NEAR | anyone | Mints rcNEAR when idle, queues the deposit during a round. Registers the depositor. Unused storage refunded. Returns shares minted (0 if queued). |
+| `cancel_pending_deposit()` | | depositor | Returns a queued deposit in full, in any phase. |
+| `redeem_shares()` | | depositor | Turns a queued deposit into rcNEAR once no round is live. |
+| `request_withdraw(shares)` | ~0.01 NEAR | holder | Burns `shares`. Paid at once when idle, otherwise queued until the round finalizes. Also pays an earlier queued withdrawal whose round has finalized. |
+| `claim_withdraw()` | | holder | Pays a queued withdrawal whose round has finalized. |
+| `open_epoch()` | | anyone | Reads the price, sets the strike, starts the auction. Resolves to `false` if the price was unusable, or if the call only recorded a lapsed auction. |
+| `bid(notional, max_premium_bps)` | premium at the ceiling + 0.01 NEAR | anyone | Buys up to `notional` at the current premium, never above `max_premium_bps`. The difference is refunded. Resolves to the notional filled (0 when refused and refunded). |
+| `close_round()` | | anyone | Settles, voids or resolves an expired round from the price data, or records a lapsed auction. The caller earns the bounty but cannot choose the outcome. Resolves to `null` while no price at or after expiry exists yet. |
+| `claim_payout(round)` | | bidder | Pays what a fill is owed: the cash payout of a round settled above the strike, or the premium of a voided round. |
+| `ft_on_transfer` (via `wrap.testnet` `ft_transfer_call`) | 1 yocto on the wNEAR call | anyone | Takes a bid in wNEAR. `msg` is `{"bid":{"notional":"…","max_premium_bps":150,"beneficiary":"…"}}`; `beneficiary` is optional and receives refunds and payouts. Anything that is not a valid bid is returned in full. |
+
+The share token is a standard NEP-141 (`rcNEAR`, 24 decimals) with NEP-145 storage: an account that receives rcNEAR
+by `ft_transfer` must first be registered with `storage_deposit`. `storage_unregister` is disabled, since it would
+burn shares outside the pool accounting.
+
+**Views:** `get_epoch` (live round, phase and every deadline), `get_position(account_id)`, `get_round(round)`,
+`get_rounds(from, limit)`, `get_bidder_position(round, account_id)`, `get_config` (oracle, feed id, wNEAR,
+parameters), `get_liabilities` (everything the vault owes, to check against its balance), and the NEP-141/145 views.
+
+**Events** (NEP-297, standard `rigel`): `deposited`, `deposit_cancelled`, `pending_redeemed`, `withdraw_requested`,
+`withdraw_claimed`, `round_opened`, `open_refused`, `bid_filled`, `bid_refused`, `round_settled`, `round_lapsed`,
+`round_voided`, `round_unresolved`, `payout_claimed`, `intent_bid_received`, `inbound_returned`, `unwrap_failed`;
+plus the NEP-141 `ft_mint`, `ft_burn` and `ft_transfer`.
+
+### Parameters
+
+Fixed at deployment ([`deploy/vault-init.testnet.json`](deploy/vault-init.testnet.json)); there is no admin to change
+them.
+
+| Parameter | Meaning | Testnet value |
+|---|---|---|
+| `epoch_duration` | Open to expiry | 1200 s |
+| `auction_duration` | Length of the auction, at most a quarter of the round | 300 s |
+| `min_idle_gap` | Pause between a round finalizing and the next opening | 60 s |
+| `strike_bps_otm` | Strike above the opening price | 50 (0.50 %) |
+| `premium_start_bps`, `premium_floor_bps` | Auction premium at open and at close, as a share of notional | 150, 20 |
+| `max_staleness` | Oldest price accepted to open a round or fill a bid | 60 s |
+| `max_conf_bps` | Widest confidence interval a usable price may have | 40 |
+| `settle_window` | After expiry, how long a published price can settle the round | 120 s |
+| `unresolved_after` | After expiry, when a round resolves without the oracle | 600 s |
+| `min_fill`, `min_deposit` | Smallest bid fill and smallest deposit | 0.1 NEAR, 1 NEAR |
+| `settle_bounty_bps` | Share of the round's premium paid to whoever closes it | 50 (0.50 %) |
+
+### Price adapter: `price-adapter`
+
+`push_price(price_identifier, price)` stores a Pyth-shaped price; only the reporter may call it, an update no newer
+than the stored one is ignored, and a publish time more than 10 s ahead of the block is refused. `get_price_unsafe` returns
+the newest price in Pyth's JSON shape; `get_reporter` names the reporter.
+
 ## Building
 
 Requirements: Rust (stable) with `wasm32-unknown-unknown`, [`cargo-near`](https://github.com/near/cargo-near),

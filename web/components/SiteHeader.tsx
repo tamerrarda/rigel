@@ -32,7 +32,7 @@ export function SiteHeader() {
           </Link>
         ))}
       </nav>
-      <div className="corner spot-corner" title="Median of three exchanges, pushed in Pyth's format">
+      <div className="corner spot-corner" title="Median of exchange prices, pushed in Pyth's format">
         <span className="k">NEAR/USD</span>
         <span>{price ? usd(price.price, price.expo) : "–"}</span>
         {age !== null && <em>{age}s ago</em>}

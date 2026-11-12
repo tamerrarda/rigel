@@ -155,8 +155,10 @@ Pyth on NEAR has **not updated since 26 Aug 2026**, the day Pyth's Hermes servic
 returns `null`). There is no live price to read on NEAR today.
 
 So this deployment reads [`price-adapter`](contracts/price-adapter/src/lib.rs), a small contract that exposes
-**Pyth's exact `get_price_unsafe` view and JSON shape**. A reporter script pushes the median NEAR/USD of Binance,
-Coinbase and Kraken, with half their spread as the confidence interval. **It is trusted**: the reporter can push
+**Pyth's exact `get_price_unsafe` view and JSON shape**. A reporter pushes the median NEAR/USD of the Binance,
+Coinbase and Kraken tickers that answer (at least two), with half their spread as the confidence interval. On this
+deployment it runs as a [Cloudflare Worker](keeper/src/index.ts) every minute, where Binance refuses the
+connection, so the live median is Coinbase and Kraken. **It is trusted**: the reporter can push
 any price. The adapter only narrows what it can do (no rewriting history, nothing from the future). The vault
 needs no change to read real Pyth again: its oracle account and feed id are constructor arguments.
 
@@ -170,7 +172,7 @@ flowchart LR
     OC["1Click swap"]
     V["rigel-vault, one NEAR contract: share token NEP-141, round ledger, Dutch auction, cash settlement"]
     O["price-adapter: Pyth-shaped, testnet stand-in"]
-    R["reporter and keeper: median of 3 exchanges"]
+    R["keeper Worker: exchange median, every minute"]
     D -->|"deposit, request_withdraw"| V
     B -->|"bid"| V
     X --> OC
@@ -184,7 +186,8 @@ flowchart LR
 |---|---|
 | [`contracts/rigel-vault`](contracts/rigel-vault/src) | The vault: `epoch.rs` (open, bid, close, oracle callbacks), `intents.rs` (wNEAR bids via `ft_transfer_call`), `vault.rs` (deposits, withdrawals), `claims.rs`, `views.rs`, `token.rs` (NEP-141/145/148), `math.rs` (pure arithmetic, 256-bit `mul_div`) |
 | [`contracts/price-adapter`](contracts/price-adapter/src/lib.rs) | Pyth-compatible price store for testnet |
-| [`reporter`](reporter/src/report.ts) | Pushes NEAR/USD; with `--keeper`, opens and closes rounds |
+| [`keeper`](keeper/src/index.ts) | Cloudflare Worker on a one-minute cron: pushes NEAR/USD, opens and closes rounds |
+| [`reporter`](reporter/src/report.ts) | The same loop as a Node script, for running it from a laptop |
 | [`web`](web) | Next.js app: Vault, Rounds, Claims, My positions |
 
 ## What's deployed (NEAR testnet)
@@ -241,6 +244,15 @@ near contract deploy oracle.<you>.testnet use-file target/near/price_adapter/pri
 near contract deploy vault.<you>.testnet use-file target/near/rigel_vault/rigel_vault.wasm with-init-call new file-args deploy/vault-init.testnet.json prepaid-gas '100 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-legacy-keychain send
 near contract call-function as-transaction wrap.testnet storage_deposit json-args '{"account_id":"vault.<you>.testnet","registration_only":true}' prepaid-gas '30 Tgas' attached-deposit '0.00125 NEAR' sign-as <you>.testnet network-config testnet sign-with-legacy-keychain send
 NEAR_ACCOUNT=<you>.testnet node reporter/src/report.ts --keeper
+```
+
+Or host the keeper instead of running the script (free Workers plan; set the accounts in `keeper/wrangler.toml`):
+
+```sh
+cd keeper
+npx wrangler login
+npx wrangler secret put REPORTER_KEY   # the ed25519:... private key of <you>.testnet
+npx wrangler deploy
 ```
 
 (Edit `oracle` in `deploy/vault-init.testnet.json` to your adapter account first. `wnear` names the token the

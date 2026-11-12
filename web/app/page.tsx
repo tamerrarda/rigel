@@ -110,7 +110,7 @@ export default function Landing() {
           <div>
             <dt>NEAR/USD</dt>
             <dd>{price ? usd(price.price, price.expo) : "–"}</dd>
-            <small>median of 3 exchanges</small>
+            <small>exchange median</small>
           </div>
           <div>
             <dt>Pool</dt>
